@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiTalkingVideoRouteImport } from './routes/api/talking-video'
 import { Route as ApiAnimefyRouteImport } from './routes/api/animefy'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTalkingVideoRoute = ApiTalkingVideoRouteImport.update({
+  id: '/api/talking-video',
+  path: '/api/talking-video',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAnimefyRoute = ApiAnimefyRouteImport.update({
@@ -26,27 +32,31 @@ const ApiAnimefyRoute = ApiAnimefyRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/animefy': typeof ApiAnimefyRoute
+  '/api/talking-video': typeof ApiTalkingVideoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/animefy': typeof ApiAnimefyRoute
+  '/api/talking-video': typeof ApiTalkingVideoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/animefy': typeof ApiAnimefyRoute
+  '/api/talking-video': typeof ApiTalkingVideoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/animefy'
+  fullPaths: '/' | '/api/animefy' | '/api/talking-video'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/animefy'
-  id: '__root__' | '/' | '/api/animefy'
+  to: '/' | '/api/animefy' | '/api/talking-video'
+  id: '__root__' | '/' | '/api/animefy' | '/api/talking-video'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiAnimefyRoute: typeof ApiAnimefyRoute
+  ApiTalkingVideoRoute: typeof ApiTalkingVideoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/talking-video': {
+      id: '/api/talking-video'
+      path: '/api/talking-video'
+      fullPath: '/api/talking-video'
+      preLoaderRoute: typeof ApiTalkingVideoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/animefy': {
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiAnimefyRoute: ApiAnimefyRoute,
+  ApiTalkingVideoRoute: ApiTalkingVideoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
