@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Sparkles,
   Upload,
@@ -15,6 +15,9 @@ import {
   Check,
   Maximize2,
   Settings,
+  Music,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -22,24 +25,32 @@ export const Route = createFileRoute("/")({
 });
 
 const STYLES = [
-  { id: "ghibli", label: "Ghibli Dream", hint: "Studio Ghibli inspired, soft watercolor backgrounds, rounded character features, warm pastel palette, hand-drawn line art, painterly, nature-focused" },
-  { id: "shonen", label: "Shonen Hero", hint: "bold shonen anime, sharp line work, dramatic lighting, detailed expressions, action-oriented, thick black outlines, dynamic cel shading, high-energy" },
-  { id: "shoujo", label: "Shoujo Glow", hint: "soft shoujo anime, sparkles and stars, pastel pink palette, dreamy eyes, romantic lighting, soft focus backgrounds, delicate details" },
-  { id: "cyber", label: "Cyber Neon", hint: "cyberpunk anime, neon city lights, futuristic tech, holographic glow, sharp digital aesthetics, high contrast, glowing effects" },
-  { id: "retro", label: "90s Retro", hint: "1990s cel anime, grainy film texture, nostalgic VHS palette, OVA aesthetic, limited color palette, vintage feel" },
-  { id: "kyoto", label: "Kyoto Animation", hint: "Kyoto Animation style, intricate hair and eye rendering, soft lighting, realistic proportions, detailed backgrounds, polished" },
-  { id: "pencil", label: "Pencil Sketch", hint: "detailed graphite pencil drawing, hand-drawn cross-hatching, paper texture, monochrome, realistic shading, artistic" },
-  { id: "ink", label: "Ink Drawing", hint: "black ink illustration, bold linework, manga style, no color, white background, high contrast, expressive" },
-  { id: "watercolor", label: "Watercolor", hint: "soft watercolor painting, paper texture, gentle color bleeds, traditional media, wet brush effects, flowing" },
-  { id: "oil", label: "Oil Painting", hint: "classical oil painting, visible brush strokes, rich impasto, renaissance lighting, museum quality, textured" },
-  { id: "gray", label: "B&W Noir", hint: "high-contrast black and white anime, noir lighting, deep shadows, monochrome, dramatic cinematography, atmospheric" },
-  { id: "pixar", label: "3D Pixar", hint: "Pixar-style 3D character render, soft subsurface lighting, expressive eyes, polished 3D animation, modern" },
-  { id: "pop", label: "Pop Art", hint: "Roy Lichtenstein pop art, halftone dots, bold primary colors, comic style, vibrant energy, graphic" },
-  { id: "vangogh", label: "Van Gogh", hint: "Van Gogh post-impressionist, swirling brushstrokes, vibrant yellows and blues, expressive texture, artistic" },
-  { id: "lowpoly", label: "Low Poly", hint: "geometric low-poly 3D render, faceted shading, modern minimalist, triangulated surfaces, clean" },
-  { id: "comic", label: "Western Comic", hint: "American comic book art, bold inks, ben-day dots, dynamic shading, action-packed, graphic novel" },
-  { id: "madhouse", label: "Madhouse Studio", hint: "Madhouse animation style, sharp line work, dramatic lighting, detailed character expressions, modern digital" },
-  { id: "trigger", label: "Trigger Studio", hint: "Trigger animation style, exaggerated expressions, bold color choices, dynamic poses, high-energy, vibrant" },
+  { id: "ghibli", label: "Ghibli Dream" },
+  { id: "shonen", label: "Shonen Hero" },
+  { id: "shoujo", label: "Shoujo Glow" },
+  { id: "cyber", label: "Cyber Neon" },
+  { id: "retro", label: "90s Retro" },
+  { id: "kyoto", label: "Kyoto Animation" },
+  { id: "pencil", label: "Pencil Sketch" },
+  { id: "ink", label: "Ink Drawing" },
+  { id: "watercolor", label: "Watercolor" },
+  { id: "oil", label: "Oil Painting" },
+  { id: "gray", label: "B&W Noir" },
+  { id: "pixar", label: "3D Pixar" },
+  { id: "pop", label: "Pop Art" },
+  { id: "vangogh", label: "Van Gogh" },
+  { id: "lowpoly", label: "Low Poly" },
+  { id: "comic", label: "Western Comic" },
+  { id: "madhouse", label: "Madhouse Studio" },
+  { id: "trigger", label: "Trigger Studio" },
+];
+
+const MUSIC_PRESETS = [
+  { id: "custom", label: "Custom URL" },
+  { id: "lofi", label: "Lo-fi Chill", url: "https://cdn.pixabay.com/download/audio/2022/01/20/audio_d0c6ff1bab.mp3" },
+  { id: "epic", label: "Epic Battle", url: "https://cdn.pixabay.com/download/audio/2021/04/07/audio_5b826a83ea.mp3" },
+  { id: "peaceful", label: "Peaceful", url: "https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3" },
+  { id: "upbeat", label: "Upbeat Pop", url: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" },
 ];
 
 type Filters = {
@@ -101,19 +112,17 @@ function BeforeAfterSlider({ before, after }: { before: string; after: string })
       ref={containerRef}
       className="relative w-full aspect-square overflow-hidden rounded-2xl cursor-col-resize bg-muted/40"
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => {}}
     >
       <img src={before} alt="Before" className="absolute inset-0 w-full h-full object-cover" />
-      <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ width: `${sliderPos}%` }}
-      >
-        <img src={after} alt="After" className="w-screen h-full object-cover" style={{ width: `${100 / (sliderPos / 100)}%` }} />
+      <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPos}%` }}>
+        <img
+          src={after}
+          alt="After"
+          className="w-screen h-full object-cover"
+          style={{ width: `${100 / (sliderPos / 100)}%` }}
+        />
       </div>
-      <div
-        className="absolute top-0 bottom-0 w-1 bg-primary shadow-lg"
-        style={{ left: `${sliderPos}%` }}
-      >
+      <div className="absolute top-0 bottom-0 w-1 bg-primary shadow-lg" style={{ left: `${sliderPos}%` }}>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground rounded-full p-2">
           <Maximize2 className="h-4 w-4" />
         </div>
@@ -141,11 +150,50 @@ function Index() {
   const [videoError, setVideoError] = useState<string | null>(null);
   const [selectedVoice, setSelectedVoice] = useState("en-US-JennyNeural");
 
+  // Background music state
+  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [musicPreset, setMusicPreset] = useState("lofi");
+  const [customMusicUrl, setCustomMusicUrl] = useState("");
+  const [musicVolume, setMusicVolume] = useState(0.3);
+  const musicRef = useRef<HTMLAudioElement>(null);
+
+  const activeMusicUrl =
+    musicPreset === "custom"
+      ? customMusicUrl
+      : (MUSIC_PRESETS.find((p) => p.id === musicPreset)?.url ?? "");
+
+  // Sync background music with video playback
+  useEffect(() => {
+    const audio = musicRef.current;
+    if (!audio) return;
+    if (video && musicEnabled && activeMusicUrl) {
+      audio.src = activeMusicUrl;
+      audio.volume = musicVolume;
+      audio.loop = true;
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }, [video, musicEnabled, activeMusicUrl, musicVolume]);
+
+  // Update volume without reloading track
+  useEffect(() => {
+    if (musicRef.current) musicRef.current.volume = musicVolume;
+  }, [musicVolume]);
+
   const voices = [
     { id: "en-US-JennyNeural", name: "Jenny (Female)" },
     { id: "en-US-AriaNeural", name: "Aria (Female)" },
-    { id: "en-US-GuyNeural", name: "Guy (Male)" },
     { id: "en-US-AmberNeural", name: "Amber (Female)" },
+    { id: "en-US-SaraNeural", name: "Sara (Female)" },
+    { id: "en-US-CoraNeural", name: "Cora (Female)" },
+    { id: "en-US-MichelleNeural", name: "Michelle (Female)" },
+    { id: "en-US-MonicaNeural", name: "Monica (Female)" },
+    { id: "en-US-GuyNeural", name: "Guy (Male)" },
+    { id: "en-US-BrianNeural", name: "Brian (Male)" },
+    { id: "en-US-EricNeural", name: "Eric (Male)" },
+    { id: "en-US-ChristopherNeural", name: "Christopher (Male)" },
   ];
 
   const handleFile = useCallback((f: File) => {
@@ -173,16 +221,14 @@ function Index() {
     setVideo(null);
     try {
       const edited = await applyFiltersToDataUrl(original, filters);
-      const style = STYLES.find((s) => s.id === styleId)?.hint;
       const res = await fetch("/api/animefy", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ image: edited, style }),
+        body: JSON.stringify({ image: edited, style: styleId }),
       });
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 429) throw new Error("Rate limit reached. Try again in a moment.");
-        if (res.status === 402) throw new Error("AI credits exhausted. Add credits in Settings → Workspace → Usage.");
         throw new Error(data.error || "Generation failed");
       }
       setResult(data.image);
@@ -233,10 +279,19 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-soft-gradient overflow-hidden">
+      {/* Hidden audio element for background music */}
+      <audio ref={musicRef} />
+
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute -top-32 -left-32 h-96 w-96 bg-hero-gradient opacity-30 animate-blob blur-3xl" />
-        <div className="absolute top-1/3 -right-40 h-[28rem] w-[28rem] bg-accent opacity-25 animate-blob blur-3xl" style={{ animationDelay: "3s" }} />
-        <div className="absolute bottom-0 left-1/4 h-80 w-80 bg-primary opacity-20 animate-blob blur-3xl" style={{ animationDelay: "6s" }} />
+        <div
+          className="absolute top-1/3 -right-40 h-[28rem] w-[28rem] bg-accent opacity-25 animate-blob blur-3xl"
+          style={{ animationDelay: "3s" }}
+        />
+        <div
+          className="absolute bottom-0 left-1/4 h-80 w-80 bg-primary opacity-20 animate-blob blur-3xl"
+          style={{ animationDelay: "6s" }}
+        />
       </div>
 
       <header className="container mx-auto flex items-center justify-between px-6 py-6">
@@ -256,14 +311,15 @@ function Index() {
 
       <section className="container mx-auto px-6 pt-12 pb-20 text-center">
         <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/30 bg-background/70 px-4 py-1.5 text-xs font-semibold text-primary backdrop-blur">
-          <Sparkles className="h-3.5 w-3.5" /> Powered by Gemini 2.5 Flash Image
+          <Sparkles className="h-3.5 w-3.5" /> Powered by Google Gemini AI
         </div>
         <h1 className="mt-6 font-display text-5xl leading-[0.95] font-bold sm:text-7xl md:text-8xl">
           Transform photos into{" "}
           <span className="bg-hero-gradient bg-clip-text text-transparent">professional anime art</span>
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-          18 stunning art styles, advanced editing tools, and AI-powered talking video generation — all in one creative studio.
+          18 stunning art styles, advanced editing tools, and AI-powered talking video generation with background music
+          — all in one creative studio.
         </p>
         <a
           href="#studio"
@@ -355,7 +411,10 @@ function Index() {
                     </div>
                   )}
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <button onClick={reset} className="text-xs font-semibold text-muted-foreground underline-offset-4 hover:underline">
+                    <button
+                      onClick={reset}
+                      className="text-xs font-semibold text-muted-foreground underline-offset-4 hover:underline"
+                    >
                       Choose a different photo
                     </button>
                   </div>
@@ -388,7 +447,7 @@ function Index() {
 
               {result && original && !loading && (
                 <div className="mt-4 p-4 rounded-2xl border-2 border-foreground/10 bg-background/60">
-                  <p className="text-xs font-semibold mb-3 text-muted-foreground">Before & After Comparison</p>
+                  <p className="text-xs font-semibold mb-3 text-muted-foreground">Before &amp; After Comparison</p>
                   <BeforeAfterSlider before={original} after={result} />
                 </div>
               )}
@@ -414,7 +473,6 @@ function Index() {
                 <button
                   key={s.id}
                   onClick={() => setStyleId(s.id)}
-                  title={s.hint}
                   className={`rounded-lg border-2 px-3 py-2 text-xs font-bold transition-all ${
                     styleId === s.id
                       ? "border-foreground bg-foreground text-background shadow-pop"
@@ -452,7 +510,7 @@ function Index() {
               <h2 className="font-display text-2xl font-bold">4. Talking Video</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Make your anime character talk with realistic lip sync and AI voice.
+              Make your anime character talk with realistic lip sync, AI voice, and optional background music.
             </p>
 
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -484,6 +542,76 @@ function Index() {
                     </option>
                   ))}
                 </select>
+
+                {/* Background Music */}
+                <div className="mt-4 rounded-xl border-2 border-foreground/10 bg-muted/30 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                      <Music className="h-3 w-3" /> Background Music
+                    </label>
+                    <button
+                      onClick={() => setMusicEnabled(!musicEnabled)}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        musicEnabled ? "bg-primary" : "bg-foreground/20"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+                          musicEnabled ? "translate-x-4" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {musicEnabled && (
+                    <div className="space-y-2 mt-2">
+                      <select
+                        value={musicPreset}
+                        onChange={(e) => setMusicPreset(e.target.value)}
+                        className="w-full rounded-lg border-2 border-foreground/20 bg-background p-2 text-xs focus:border-primary focus:outline-none"
+                      >
+                        {MUSIC_PRESETS.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      {musicPreset === "custom" && (
+                        <input
+                          type="url"
+                          value={customMusicUrl}
+                          onChange={(e) => setCustomMusicUrl(e.target.value)}
+                          placeholder="Paste a direct MP3/OGG URL…"
+                          className="w-full rounded-lg border-2 border-foreground/20 bg-background p-2 text-xs focus:border-primary focus:outline-none"
+                        />
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        {musicVolume === 0 ? (
+                          <VolumeX className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        ) : (
+                          <Volume2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        )}
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={musicVolume}
+                          onChange={(e) => setMusicVolume(Number(e.target.value))}
+                          className="flex-1 accent-primary"
+                        />
+                        <span className="text-xs text-muted-foreground w-7 text-right">
+                          {Math.round(musicVolume * 100)}%
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Music plays alongside the video in your browser.
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 <div className="flex gap-2 mt-4">
                   <button
@@ -529,10 +657,11 @@ function Index() {
                 )}
               </div>
             </div>
+
             {video && (
               <a
                 href={video}
-                download="intro.mp4"
+                download="anime-talking.mp4"
                 target="_blank"
                 rel="noreferrer"
                 className="mt-4 inline-flex items-center gap-2 rounded-full border-2 border-foreground bg-background px-4 py-2 text-sm font-bold shadow-pop transition-transform hover:-translate-y-0.5"
@@ -547,7 +676,7 @@ function Index() {
           {[
             { icon: Sparkles, title: "18 Art Styles", body: "Ghibli, cyberpunk, oil painting, and more professional styles." },
             { icon: Sliders, title: "Advanced Editing", body: "Fine-tune brightness, contrast, hue, and more before generation." },
-            { icon: Video, title: "Talking Videos", body: "Create engaging intro videos with AI voice and lip sync." },
+            { icon: Music, title: "Music + Voice", body: "AI lip-sync voice with optional background music overlay." },
           ].map((f) => (
             <div key={f.title} className="rounded-2xl border-2 border-foreground bg-background p-6 shadow-pop">
               <div className="inline-flex rounded-xl bg-hero-gradient p-2.5 shadow-glow">

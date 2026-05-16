@@ -3,7 +3,18 @@ import { createFileRoute } from "@tanstack/react-router";
 
 type Body = { image: string; style?: string };
 
-// Enhanced anime style prompts with professional-grade descriptions
+type GeminiResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{
+        text?: string;
+        inlineData?: { mimeType: string; data: string };
+      }>;
+    };
+  }>;
+  error?: { message: string; code: number };
+};
+
 const STYLE_PROMPTS: Record<string, string> = {
   ghibli: "Studio Ghibli inspired, soft watercolor backgrounds, rounded character features, warm pastel palette, hand-drawn line art, painterly, nature-focused",
   shonen: "bold shonen anime, sharp line work, dramatic lighting, detailed expressions, action-oriented, thick black outlines, dynamic cel shading, high-energy",
@@ -37,20 +48,19 @@ export const Route = createFileRoute("/api/animefy")({
           });
         }
 
-        const key = process.env.LOVABLE_API_KEY;
+        const key = process.env.GEMINI_API_KEY;
         if (!key) {
-          return new Response(JSON.stringify({ error: "Missing LOVABLE_API_KEY" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Missing GEMINI_API_KEY. Get a free key at https://ai.google.dev" }),
+            { status: 500, headers: { "content-type": "application/json" } },
+          );
         }
 
-        // Get the style hint from the predefined styles or use default
-        const styleHint = style?.trim() && STYLE_PROMPTS[style.trim()] 
-          ? STYLE_PROMPTS[style.trim()] 
-          : STYLE_PROMPTS.ghibli;
+        const styleHint =
+          style?.trim() && STYLE_PROMPTS[style.trim()]
+            ? STYLE_PROMPTS[style.trim()]
+            : STYLE_PROMPTS.ghibli;
 
-        // Enhanced prompt with multi-layered approach for better results
         const prompt = `Transform this photo into a professional-grade anime illustration with exceptional quality and artistic detail.
 
 STYLE REFERENCE: ${styleHint}
@@ -69,53 +79,65 @@ CRITICAL REQUIREMENTS:
 
 OUTPUT: A stunning, high-quality anime artwork that captures both the original subject's essence and the chosen artistic style. Professional studio quality.`;
 
-        const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${key}`,
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: prompt },
-                  { type: "image_url", image_url: { url: image } },
-                ],
+        // Parse data URL to extract mime type and raw base64
+        const match = image.match(/^data:(image\/[^;]+);base64,(.+)$/);
+        if (!match) {
+          return new Response(JSON.stringify({ error: "Invalid image data format" }), {
+            status: 400,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        const [, mimeType, base64Data] = match;
+
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: prompt },
+                    { inline_data: { mime_type: mimeType, data: base64Data } },
+                  ],
+                },
+              ],
+              generationConfig: {
+                responseModalities: ["TEXT", "IMAGE"],
               },
-            ],
-            modalities: ["image", "text"],
-          }),
-        });
+            }),
+          },
+        );
 
         if (!res.ok) {
           const txt = await res.text();
           return new Response(
-            JSON.stringify({ error: `AI gateway error: ${res.status}`, detail: txt }),
+            JSON.stringify({ error: `Gemini API error: ${res.status}`, detail: txt }),
             { status: res.status, headers: { "content-type": "application/json" } },
           );
         }
 
-        const data = (await res.json()) as {
-          choices?: Array<{
-            message?: {
-              images?: Array<{ image_url?: { url?: string } }>;
-              content?: string;
-            };
-          }>;
-        };
+        const data = (await res.json()) as GeminiResponse;
 
-        const url = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-        if (!url) {
+        if (data.error) {
           return new Response(
-            JSON.stringify({ error: "No image returned", raw: data }),
+            JSON.stringify({ error: `Gemini error: ${data.error.message}` }),
             { status: 502, headers: { "content-type": "application/json" } },
           );
         }
 
-        return new Response(JSON.stringify({ image: url }), {
+        const parts = data.candidates?.[0]?.content?.parts ?? [];
+        const imagePart = parts.find((p) => p.inlineData?.data);
+        if (!imagePart?.inlineData) {
+          return new Response(
+            JSON.stringify({ error: "No image returned from Gemini", raw: data }),
+            { status: 502, headers: { "content-type": "application/json" } },
+          );
+        }
+
+        const imageUrl = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+        return new Response(JSON.stringify({ image: imageUrl }), {
           headers: { "content-type": "application/json" },
         });
       },
